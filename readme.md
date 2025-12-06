@@ -18,13 +18,9 @@ Name one feature you didn’t add (or simplified) to keep timing predictable. Wh
 
 #### Troubleshooting Reset ISR & Task
 
+I said:
 assert failed: 0x4008b966 <cached disabled>:1358 (<cached disabled>)
-
-
 Backtrace: 0x400818ae:0x3ffb0de0 0x40085991:0x3ffb0e00 0x4008ba09:0x3ffb0e20 0x40085f2a:0x3ffb0f40 0x40082a54:0x3ffb0f60 0x4008303a:0x3ffb0f90 0x400830ca:0x3ffb0fc0 0x40082de9:0x3ffb0ff0 0x400845e3:0x3ffb4540 0x400d2113:0x3ffb4560 0x400870d2:0x3ffb4580 0x40086321:0x3ffb45a0
-
-
-
 
 ELF file SHA256: 6e83b5b77
 
@@ -44,17 +40,15 @@ entry 0x400805dc
 [       0 ms] [BOOT] Ride Safety Node started. Threshold=3000
 [     200 ms] [Telemetry] adc=   0, alerts_in_queue= 0, emergency=0
 [     400 ms] [Telemetry] adc
-ChatGPT said:
 
-Okay — now that ultrasonic.c is gone and your project builds, you're seeing THIS again:
+ChatGPT said:
+Okay — you're seeing THIS:
 
 assert failed: 0x4008b966 <cached disabled>:1358 (<cached disabled>)
 Backtrace...
 Rebooting...
 E (xxx) gpio: gpio_isr_handler_add(): GPIO isr service is not installed
 
-
-This 100% confirms the cause:
 
 ❗ Your RESET ISR is being registered BEFORE gpio_install_isr_service() is called.
 
@@ -73,3 +67,4 @@ gpio_isr_handler_add(ESTOP_PIN, estop_isr_handler, NULL);
 
 // Add RESET ISR
 gpio_isr_handler_add(RESET_PIN, reset_isr_handler, NULL);
+
