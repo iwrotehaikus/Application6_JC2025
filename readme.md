@@ -1,6 +1,14 @@
-# Engineering Analysis 
-(≈ 4‑6 sentences each in README)
+# Company Synopsis & System Overview
+The Walt Disney Company operates some of the world’s most sophisticated ride systems, where passenger safety depends on rapid, deterministic responses to sensors and operator commands. Ride vehicles and track segments rely on distributed safety nodes that continuously monitor load, brake conditions, and emergency stop inputs. These systems must meet strict timing deadlines to avoid catastrophic failure. Real-time performance is essential: missing deadlines could delay braking, misreport sensor data, or fail to detect an overload condition. This prototype models one such safety node.
 
+This project implements a proof-of-concept ride safety node similar to the distributed microcontrollers used in modern roller coaster control systems. The ESP32 monitors a simulated track-load sensor, operator E-Stop input, and a manual reset button. It drives dedicated indicator LEDs for system status, overload conditions, and emergency braking, while also producing periodic telemetry messages for a higher-level supervisory controller. The purpose of this design is to demonstrate clear partitioning between Hard, Firm, and Soft real time workloads while showing how critical safety functions can preempt and override lower-priority system activities. The node models realistic safety behavior: overload warnings, continuous alarm states, E-Stop latching, and degraded-mode telemetry once an emergency occurs.
+
+# Task Table
+
+![alt text](<Screenshot 2025-12-05 191401.png>)
+
+
+# Engineering Analysis 
 ## Scheduler Fit: 
 How do your task priorities / RTOS settings guarantee every H task’s deadline in Wokwi? Cite one timestamp pair that proves it.
 
@@ -67,4 +75,5 @@ gpio_isr_handler_add(ESTOP_PIN, estop_isr_handler, NULL);
 
 // Add RESET ISR
 gpio_isr_handler_add(RESET_PIN, reset_isr_handler, NULL);
+
 
