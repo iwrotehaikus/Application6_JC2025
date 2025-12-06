@@ -1,3 +1,6 @@
+# Demo Video
+https://youtu.be/z5URu_BGqvU
+
 # Company Synopsis & System Overview
 The Walt Disney Company operates some of the world’s most sophisticated ride systems, where passenger safety depends on rapid, deterministic responses to sensors and operator commands. Ride vehicles and track segments rely on distributed safety nodes that continuously monitor load, brake conditions, and emergency stop inputs. These systems must meet strict timing deadlines to avoid catastrophic failure. Real-time performance is essential: missing deadlines could delay braking, misreport sensor data, or fail to detect an overload condition. This prototype models one such safety node.
 
@@ -89,6 +92,7 @@ gpio_isr_handler_add(ESTOP_PIN, estop_isr_handler, NULL);
 
 // Add RESET ISR
 gpio_isr_handler_add(RESET_PIN, reset_isr_handler, NULL);
+
 
 
 
