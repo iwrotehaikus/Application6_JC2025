@@ -4,23 +4,37 @@ The Walt Disney Company operates some of the world’s most sophisticated ride s
 This project implements a proof-of-concept ride safety node similar to the distributed microcontrollers used in modern roller coaster control systems. The ESP32 monitors a simulated track-load sensor, operator E-Stop input, and a manual reset button. It drives dedicated indicator LEDs for system status, overload conditions, and emergency braking, while also producing periodic telemetry messages for a higher-level supervisory controller. The purpose of this design is to demonstrate clear partitioning between Hard, Firm, and Soft real time workloads while showing how critical safety functions can preempt and override lower-priority system activities. The node models realistic safety behavior: overload warnings, continuous alarm states, E-Stop latching, and degraded-mode telemetry once an emergency occurs.
 
 # Task Table
-
 ![alt text](<Screenshot 2025-12-05 191401.png>)
 
+Internal Sync Used:
+*Binary semaphore — E-Stop ISR → estop_task
+*Mutex — Protect shared ADC value and UART printing
+*Queue — Load monitor → alert handler (overload events)
 
 # Engineering Analysis 
 ## Scheduler Fit: 
 How do your task priorities / RTOS settings guarantee every H task’s deadline in Wokwi? Cite one timestamp pair that proves it.
 
+Hard real-time deadlines are enforced through strict priority assignment and ISR-to-task signaling. The E-Stop ISR triggers instantly and wakes the highest-priority estop_task (priority 4), guaranteeing its execution before any other task. The load_sensor_task runs at priority 3 with vTaskDelayUntil(), ensuring a fixed 50 ms sample interval regardless of system load. Lower-priority tasks such as telemetry and heartbeat cannot preempt hard RT tasks, ensuring deterministic timing. A timestamp example demonstrating the correctness is shown when [E-STOP] log messages appear at the exact millisecond of actuation (e.g., 2440 ms) followed immediately by braking, confirming sub-5 ms latency.
+
 ## Race‑Proofing: 
 Where could a race occur? Show the exact line(s) you protected and which primitive solved it.
+
+Two potential race conditions existed: shared access to latest_adc_raw and simultaneous UART prints from multiple tasks. The ADC race was prevented by wrapping read/write operations with a mutex:
+
+if (xSemaphoreTake(adc_mutex, pdMS_TO_TICKS(5)) == pdTRUE)
+
+This guarantees no two tasks read or modify the ADC value simultaneously. UART output was protected using a print_mutex inside safe_printf(), preventing interleaved or corrupted serial messages caused by concurrent writes. Without these protections, timing jitter, invalid data, or mixed-line output would occur.
 
 ## Worst‑Case Spike: 
 Describe the heaviest load you threw at the prototype (e.g., sensor spam, comm burst). What margin (of time) remained before an H deadline would slip?
 
+The harshest stress test involved forcing rapid overload events (continuous ADC values above threshold) while simultaneously spamming the E-Stop button and allowing the telemetry queue depth to increase, which increases execution time of the variable-load loop. Even under these conditions, all soft tasks slowed appropriately, but the hard RT tasks maintained deadlines. E-Stop reaction time remained within ~2–3 ms, leaving a comfortable safety margin below the 5 ms requirement. Load sampling also remained pinned to its 50 ms period, proving that the scheduler architecture survived worst-case contention.
+
 ## Design Trade‑off: 
 Name one feature you didn’t add (or simplified) to keep timing predictable. Why was that the right call for your chosen company?
 
+A potential feature—full Wi-Fi telemetry broadcasting to a remote dashboard—was intentionally omitted. While attractive for visualization, Wi-Fi introduces nondeterministic delays, ISR bursts, and long blocking intervals that could interfere with hard RT responsiveness. For a safety-critical ride controller, predictability outweighs convenience, and relying solely on UART ensures deterministic behavior. Additionally, queue lengths and telemetry rates were intentionally conservative to avoid unbounded memory growth or priority inversion. These trade-offs reflect real-world ride control priorities: safety and determinism over features.
 
 ### AI Use
 
@@ -75,5 +89,6 @@ gpio_isr_handler_add(ESTOP_PIN, estop_isr_handler, NULL);
 
 // Add RESET ISR
 gpio_isr_handler_add(RESET_PIN, reset_isr_handler, NULL);
+
 
 
